@@ -1,0 +1,228 @@
+--В базах данных существует такие понятия как DDL и DML
+--Если приводить в пример Excel, то:
+
+--DDL используется для создания, и управления базой данных - имеет 3 оснвные функции:
+--CREATE - используется для создания схемы, таблицы, базы данных
+--DROP - используется для удаления схемы, таблицы, базы данных
+--ALTER - используется для изменения схемы, таблицы, базы данных
+
+--DML используется для манипулирования данных в базе данных - имеет 4 основнык функции:
+--INSERT - добавление новых строк
+--DELETE - удаление строк
+--UPDATE - изменение строк
+--SELECT - используется для выборки данных в базе
+
+-- По конвенции sql все ключевые слова должны писатся заглавными буквами, назания маленьки и через знак " _ "
+-- но самой базе данных все равно на регистр
+
+CREATE SCHEMA day_2_schema;
+
+CREATE TABLE lesson (
+--Инициализация типов данных происходит по такому принципу: сначала название потом тип
+
+--Типы данных:
+
+-- Целые числа: Integer, bigint, bigserial
+-- Вещественные (с точной): numeric
+-- Строки фиксированой длинны: character(n) - char(n)
+-- Строки переменной длинны: character varying(n) - varchar(n)
+-- Дата: date
+-- Время: time
+-- Текст: TEXT
+-- Дата и время: timestamp
+
+test_int int,
+test_text text,
+test_date_and_time timestamp,
+test_symbols char(128)
+);
+
+DROP TABLE lesson;
+
+
+--------------- Lesson 1 ------------------------------
+
+
+-- Как я уже писал выше, ключевое слово INSERT добавляет в таблицу строки
+CREATE TABLE lesson_1 (
+name_surname TEXT,
+years INT,
+birthday DATE
+);
+
+INSERT INTO lesson_1(name_surname,years,birthday)
+VALUES ('Vitaliy Simerenko',33,'24-03-1990'),
+       ('Anrii Synko',16,'25-02-2007'),
+       ('Ruslan Prodan',18,'08-06-2004');
+
+
+--------------- Lesson 2 ------------------------------
+
+
+CREATE TABLE lesson_2 (
+-- Так же если нам нужно сделать обьекты уникальными, чтобы они не дублировались, или как-то по другому
+-- отредактировать способ создания строк, то мы используем Constraints
+
+person_name_surname TEXT UNIQUE,
+person_years INT NOT NULL,
+person_birthday DATE CHECK(person_birthday < '2020-01-01' AND person_birthday > '2000-01-01'),
+person_ident INT PRIMARY KEY
+
+-- NOT NULL - данная коланка не может равнятся NULL
+-- UNIQUE - данная колонка должна быть уникальной
+-- CHECK - можно установить правила какая должна быть колонка
+-- PRIMARY KEY - первичный ключ - данная колонка должна быть уникальной и не = 0
+-- FOREIGN KEY - внешний ключ
+);
+
+
+INSERT INTO lesson_2(person_name_surname,person_years,person_birthday,person_ident)
+VALUES  --('Vitaliy Simerenko',33,'24-03-1990',1),
+        ('Anrii Synko',16,'25-02-2007',3),
+        ('Ruslan Prodan',18,'08-06-2004',1),
+        --('Ruslan Prodan',null ,'08-06-2004',4),
+        --('Anton Sidorov',24,'02-06-1999',5);
+        ('Anna Chimich',18,'08-06-2002',2);
+
+
+--------------- Lesson 3 ------------------------------
+
+
+CREATE TABLE lesson_3(
+-- Serial - тип который в себе содержит инкрементацию (id++)
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    surname VARCHAR(128) NOT NULL,
+
+-- Делает уникальным name surname вместе, то есть одинаковою строку с именем и фамилией создать нельзя, но можно создать
+-- одинаковое имя но разную фамилию, или наоборот
+    UNIQUE(name,surname)
+);
+
+-- Так как id является primary key, то id у каждого столбца должен быть разный, это достигается типом serial, таким образом,
+-- что если не указывать
+INSERT INTO lesson_3(name, surname)
+VALUES
+    ('Anton ','Sidorov'),
+    ('Sveta','Ivanova'),
+    ('Ruslan','Prodan'),
+    ('Andrii','Synko');
+
+
+--------------- Lesson 4 ------------------------------
+
+
+-- В postgres есть возможность обращастя к таблицам, и получать ее данные с помощью:
+-- SELECT обьект, обьект, обьект FROM название таблицы
+
+-- Вместе с SELECT используются другие ключевые слова:
+-- DISTINCT - возвращает уникальные обьекты, если в таблице есть повторяющтеся
+-- LIMIT число - ограничивает кол-во возвращаемых записей
+-- OFFSET число - пропускает указаное кол-во записей, и выводит остальные
+
+-- SELECT не гаранитирует возвращение записей в отсортированом виде, поэтому мы
+-- сами можем отсортировать таблицу с помощью ORDER BY значение.
+-- Сортировать (числа) можно по возростанию ASC и по спаданию DESC
+
+-- Еще столбцу и целой таблице можно назначить имя (имя которое выведется в консоль)
+-- если посл указаного столбца поставить проблем или ключевое слово AS
+
+CREATE TABLE lesson_4(
+    name TEXT NOT NULL,
+    surname TEXT NOT NULL,
+    salary INT,
+    birthday DATE NOT NULL
+);
+
+INSERT INTO lesson_4(name, surname, salary, birthday)
+VALUES ('Anrii', 'Synko', 3000, '25-02-2007'),
+       ('Jakub', 'Varga', 1100, '20-01-2007'),
+       ('Ruslan', 'Prodan', 2000, '21-06-2004'),
+       ('Ruslan', 'Ursta', 1600, '5-02-2005'),
+       ('Anton', 'Penzeshtadler', 1000, '04-07-2009'),
+       ('Andriy', 'Jancikn', 1500, '24-09-2005'),
+       ('Matey', 'Slnek', 300, '16-04-2001'),
+       ('Tomas', 'Moravcik', 900, '11-02-1997'),
+       ('Tomas', 'Labar', 1200, '23-11-2006'),
+       ('Danil', 'Atukmaiev', 700, '05-10-1990');
+
+SELECT DISTINCT name имя
+FROM lesson_4;
+
+SELECT  name имя,
+        surname фамилия,
+        salary AS зарплата,
+        birthday
+FROM lesson_4
+LIMIT 5
+OFFSET 3;
+
+
+SELECT  name имя,
+        surname фамилия,
+        salary AS зарплата,
+        birthday
+FROM lesson_4
+ORDER BY salary DESC;
+
+
+
+--------------- Lesson 5 ------------------------------
+
+-- Так же вместе с SELECT используется ключевое слово WHERE которое нм говорит:
+-- я хочу получить только тех сотрудников у которых какой-то параметр равняется тому-то:
+
+-- Весте с WHERE испотзуются операторы = == <>; +=; >=; <=;
+
+-- Со строками можно использовать LIKE но оно не берет во внимение регистр,
+-- тогда если нам нужно брать во внимание регистр то мы используем ILIKE
+-- с помощью знака % можно указывать префиксы и постфиксы, напрмер если слово начинает на A% или заканчивается на %I
+
+-- BETWEEN диапазон
+
+-- Есл мы ищем именно какие-то определенные данные то используем IN()
+
+-- OR - или; AND - и; Приоритер AND выше чем OR
+
+SELECT  name имя,
+        surname фамилия,
+        salary AS зарплата,
+        birthday
+FROM lesson_4
+WHERE salary > 1000;
+
+---------------------------------------
+
+SELECT  name имя,
+        surname фамилия,
+        salary AS зарплата,
+        birthday
+FROM lesson_4
+WHERE salary BETWEEN 1000 AND 2000;
+
+---------------------------------------
+
+SELECT  name имя,
+        surname фамилия,
+        salary AS зарплата,
+        birthday
+FROM lesson_4
+WHERE name ILIKE 'A%';
+
+---------------------------------------
+
+SELECT  name имя,
+        surname фамилия,
+        salary AS зарплата,
+        birthday
+FROM lesson_4
+WHERE name ILIKE '%n';
+
+---------------------------------------
+
+SELECT  name имя,
+        surname фамилия,
+        salary AS зарплата,
+        birthday
+FROM lesson_4
+WHERE salary IN(700, 1100, 1700, 3000) OR (name ILIKE 'A%' AND surname LIKE '%n');
