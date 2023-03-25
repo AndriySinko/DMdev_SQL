@@ -1,0 +1,199 @@
+----------------Lesson 1-------------------
+
+CREATE SCHEMA day_3_schema;
+CREATE TABLE lesson_1 (
+    id SERIAL PRIMARY KEY,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    years INT NOT NULL,
+    UNIQUE(first_name, last_name)
+);
+INSERT INTO lesson_1(first_name, last_name, years)
+VALUES ('Anrii', 'Synko', 16),
+       ('Jakub', 'Varga', 17),
+       ('Ruslan', 'Prodan', 19),
+       ('Ruslan', 'Ursta', 18),
+       ('Anton', 'Penzeshtadler', 14),
+       ('Andriy', 'Jancikn', 22),
+       ('Matey', 'Slnek', 21),
+       ('Tomas', 'Moravcik', 25),
+       ('Tomas', 'Labar', 30),
+       ('Danil', 'Atukmaiev', 27);
+
+--Вместе с SELECT еще используются ключевые встроеные фунции:
+-- sum() - возвращает сумму всех записей тех полей которые мы указали в параметры,
+-- min() - возвращает минимальное поле среди всех записей тех полей которые в параметрах,
+-- max() - возвращает максимальное поле среди всех записей тех полей которые в параметрах,
+-- avg() - возвращает среднее значение всех записей тех полей которые мы указали в параметры,
+-- count() - возвращает кол-во записей тех полей которые в параметрах, не учитывает null
+--* count(*) - возвращает кол-во всех записей
+
+--upper() - возвращает строки в верхнем регистре
+--lower() - возвращает строки в нижнем регистре
+--concat() - обьеденяет и выводит строки в 1 поле
+--* concat() езе можем записать с помощью ||
+
+--now() - возвращает дату
+
+SELECT
+    sum(years) сумма_всех_возрастов,
+    min(years) минимальный_возраст,
+    max(years) максимальный_возраст,
+    avg(years) средний_возраст,
+    count(*) количесвто_записей
+FROM lesson_1 люди;
+
+SELECT
+    upper(first_name) имя_во_верхнем_регистре,
+    lower(last_name) фамилия_в_нижнем_регистре,
+    concat(last_name,' ',first_name) фио,
+    id || ' ' || first_name || ' ' || last_name айди_и_ифо
+FROM lesson_1 люди;
+
+SELECT now();
+
+
+----------------Lesson 2-------------------
+
+-- Как уже упоминалось что Constraints созданы для того чтоб ограничивать запись некорректых данных в таблицу.
+-- Если нам нужно записать в одну таблицу, какие-то данные с другой то мы используем FOREIGN KEY
+-- и ключевое слово REFERENCES, и это нам позволит ограничить запись несузествующих файлов в другой таюлице
+
+CREATE TABLE lesson_2(
+    company_id SERIAL PRIMARY KEY,
+    company_name TEXT UNIQUE NOT NULL,
+    company_create_date DATE NOT NULL,
+    company_employee_id INT REFERENCES lesson_1 -- если мы ничего не указываем в параметры то будет братся ключ
+    --employee_name TEXT,
+    --FOREIGN KEY (employee_name) REFERENCES lesson_1 (first_name)
+);
+INSERT INTO lesson_2 (company_name, company_create_date, company_employee_id)
+VALUES ('Apple','25-04-1990',1),
+       ('Google','16-09-1995',3),
+       ('Uber','05-12-2001',NULL),
+       ('Amazon','29-05-2005',4),
+       ('Facebook','17-03-1992',2);
+SELECT company_id, company_name, company_create_date, company_employee_id FROM lesson_2;
+
+
+----------------Lesson 3-------------------
+
+-- Если у нас есть две таблицы, но у них есть каки-ето схожие поля, и если нам нужно вывести их вместе,
+-- то мы используем UNION или UNION ALL, их отличие только в том, что:
+-- UNION ALL выводит все поля одной и другой таюлицы, и ей все равно есть ли там дубликаты
+-- UNION выводит только уникальные элементы обоих таблиц
+
+CREATE TABLE lesson_3(
+    id SERIAL PRIMARY KEY,
+    years INT NOT NULL,
+    name TEXT NOT NULL,
+    surname TEXT NOT NULL,
+    salary INT,
+    birthday DATE NOT NULL,
+    UNIQUE (name,surname)
+);
+INSERT INTO lesson_3 (name, surname, years,birthday, salary)
+VALUES ('Anrii', 'Synko', 18, '25-02-2007',3000),
+       ('Jakub', 'Varga', 16, '20-01-2007',NULL),
+       ('Ruslan', 'Prodan', 19, '21-06-2004',2000),
+       ('Ruslan', 'Ursta', 20, '5-02-2005',1600),
+       ('Anton', 'Penzeshtadler', 14, '04-07-2009',NULL),
+       ('Andriy', 'Jancikn', 20, '24-09-2005',1500),
+       ('Matey', 'Slnek', 16, '16-04-2001',NULL),
+       ('Tomas', 'Moravcik', 18, '11-02-1997',900),
+       ('Tomas', 'Labar', 20, '23-11-2006',1200),
+       ('Danil', 'Atukmaiev', 18, '05-10-1990',700);
+
+SELECT
+    concat(name,' ',surname) фио,
+    salary зарплата
+FROM lesson_3
+WHERE salary IS NOT NULL AND salary <1500 -- с NULL используется IS
+UNION ALL
+SELECT
+    concat(name,' ',surname) фио,
+    salary зарплата
+FROM lesson_3
+WHERE name ILIKE 'A%';
+
+
+----------------Lesson 4-------------------
+
+-- Подзапросы, это запросы внутри запросов, должны находится в скобках, и должен быть альяс.
+-- Они могут находится в:
+-- SELECT но он должен возвращать 1 поле
+-- FROM тоже должны возвращать 1 поле
+-- условии WHERE
+
+SELECT
+    avg(salary) средняя_зарплата_сотрудников
+FROM (SELECT salary
+      FROM lesson_3
+      ORDER BY salary
+      LIMIT 3) sal;
+
+SELECT  name,
+        surname,
+        salary,
+        (SELECT max(salary) FROM lesson_3) - salary разница_с_максимальной_зарплатой
+FROM lesson_3
+WHERE salary IS NOT NULL
+ORDER BY salary DESC;
+
+SELECT *
+FROM lesson_3
+WHERE salary IS NOT NULL
+  AND (SELECT name LIKE 'A%' OR surname LIKE '%n')
+  AND years<=18
+ORDER BY years;
+
+
+---------------- Lesson 5 -------------------
+-- Так ж как и добавлять записи в таблицу, их можно оттуда удалять с помощью DELETE,
+-- и регулировать то какие записи нужно удалить с помощью WHERE, а в нем можно использовать SELECT
+-- Удалять мы можем только 1 таблицу
+
+CREATE TABLE lesson_5(
+    id SERIAL PRIMARY KEY,
+    model TEXT NOT NULL,
+    type TEXT UNIQUE NOT NULL,
+    year INT NOT NULL
+);
+INSERT INTO lesson_5 (model, type, year)
+VALUES ('Audi','RS Q8',2020),
+       ('Mercedes','ML',2013),
+       ('Mitsubishi ','Outlander',2019),
+       ('Porsche','911',2010),
+       ('Skoda','Rapid',2017),
+       ('Audi','S8',2018),
+       ('Peugeot','508SE',2021),
+       ('Volkswagen','Tiguan',2019),
+       ('Mercedes','GLE',2022),
+       ('Skoda','Octavia A7',2016);
+
+DELETE FROM lesson_5
+WHERE year < 2016;
+
+DELETE FROM lesson_5
+WHERE (SELECT model ILIKE 'Audi');
+
+SELECT
+id, model, type, year
+FROM lesson_5;
+
+-- Если у записи есть внешний ключ, то мы сначала должны удалить все записи которые ссылаются на этот ключ, или
+-- при создании таблицы задать ON DELETE и что случится при удалении.
+
+
+---------------- Lesson 6 -------------------
+
+-- Если в нашей таблице проихиошли какие-то изменения, то мы можем ее обновить, или даже изменить какие-то записи.
+-- Для этого мы используем UPDATE name SET.
+
+-- Так же если мы удаляем или обновляем записи в таблице, и мы хотим увидеть какие записи мы удалили или обновили,
+-- то мы используем коючевое слово RETURNING
+
+UPDATE lesson_5
+SET year = 0000
+WHERE year > 2015
+RETURNING model, type, year;
