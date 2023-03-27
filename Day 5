@@ -1,0 +1,210 @@
+---------------------------------Day 5-------------------
+
+---------Lesson 1--------------------
+
+/*
+ С агрегирующими функциями, которые обьеденяют наши строки sum, count, avg и т.д
+ Используеются групировки запросов, и их регулировка с помощью операторов GROUP BY и HAVING
+
+ Оператор GROUP BY определяет, как строки будут группироваться.
+ Оператор HAVING определяет, какие группы будут включены в выходной результат, то есть выполняет фильтрацию групп.
+
+ Если предложение WHERE определяет предикат для фильтрации строк, то предложение HAVING
+ применяется после группировки для определения аналогичного предиката, фильтрующего группы по значениям агрегатных функций.
+ */
+
+CREATE SCHEMA day_5_schema;
+
+CREATE TABLE company
+(
+    id   SERIAL PRIMARY KEY,
+    name VARCHAR(128) NOT NULL
+);
+DROP TABLE company CASCADE;
+CREATE TABLE employee
+(
+    id         SERIAL PRIMARY KEY,
+    name       VARCHAR(128) NOT NULL,
+    surname    VARCHAR(128) NOT NULL,
+    salary     INT,
+    company_id INT REFERENCES company ON DELETE CASCADE
+);
+
+INSERT INTO company (name)
+VALUES ('Google'),
+       ('Microsoft'),
+       ('Apple'),
+       ('Uber'),
+       ('Amazon'),
+       ('Meta'),
+       ('Facebook');
+
+INSERT INTO employee (name, surname, company_id, salary)
+VALUES ('Anrii', 'Synko', 1, 3000),
+       ('Jakub', 'Varga', 1, 1200),
+       ('Ruslan', 'Prodan', 3,2000),
+       ('Ruslan', 'Ursta', 2, 1500),
+       ('Anton', 'Penzeshtadler', 5,700),
+       ('Andriy', 'Jancikn', 2,1700),
+       ('Matey', 'Slnek', 7,900),
+       ('Tomas', 'Moravcik', NULL, NULL),
+       ('Tomas', 'Labar', NULL, NULL),
+       ('Danil', 'Atukmaiev', NULL, NULL);
+
+SELECT  company.name,
+        count(e.id),
+        sum(e.salary)
+FROM company
+    FULL JOIN employee e ON company.id = e.company_id
+    GROUP BY company.id
+    --HAVING sum(e.salary) > 0;
+    ORDER BY company.id;
+
+------------------------- Lesson_2 ------------------------
+
+/*
+ Оконная функция в SQL - функция, которая работает с выделенным набором строк (окном, партицией) и выполняет
+ вычисление для этого набора строк в отдельном столбце.
+
+ Партиции (окна из набора строк) - это набор строк, указанный для оконной функции по одному из столбцов или группе
+ столбцов таблицы. Партиции для каждой оконной функции в запросе могут быть разделены по различным колонкам таблицы.
+
+ Множество оконных функций можно разделять на 3 класса:
+    Агрегирующие (Aggregate)
+    Ранжирующие (Ranking)
+    Функции смещения (Value)
+
+ Агрегирующие:
+    Можно применять любую из агрегирующих функций - SUM, AVG, COUNT, MIN, MAX
+
+ В ранжирующих функция под ключевым словом OVER обязательным идет указание условия ORDER BY, по которому
+ будет происходить сортировка ранжирования.
+    ROW_NUMBER() - функция вычисляет последовательность ранг (порядковый номер) строк внутри партиции,
+    НЕЗАВИСИМО от того, есть ли в строках повторяющиеся значения или нет.
+
+    RANK() - функция вычисляет ранг каждой строки внутри партиции. Если есть повторяющиеся значения,
+    функция возвращает одинаковый ранг для таких строчек, пропуская при этом следующий числовой ранг.
+
+ Это функции, которые позволяют перемещаясь по выделенной партиции таблицы обращаться к предыдущему значению строки
+ или крайним значениям строк в партиции.
+    LAG() - функция, возвращающая предыдущее значение столбца по порядку сортировки.
+ */
+
+CREATE TABLE lesson (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE student (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    female TEXT NOT NULL,
+    lesson INT REFERENCES lesson,
+    grade INT NOT NULL
+);
+
+INSERT INTO lesson (name)
+VALUES ('Математика'),
+       ('Английский'),
+       ('Физкультура'),
+       ('Рисование'),
+       ('Физика');
+
+INSERT INTO student (name, female, lesson, grade)
+VALUES ('Петр', 'Петров',1,4),
+       ('Петр', 'Петров',2,3),
+       ('Петр', 'Петров',3,5),
+       ('Петр', 'Петров',4,3),
+       ('Петр', 'Петров',5,4),
+       ('Маша', 'Сидорова',1,3),
+       ('Маша', 'Сидорова',2,5),
+       ('Маша', 'Сидорова',3,4),
+       ('Маша', 'Сидорова',4,5),
+       ('Маша', 'Сидорова',5,3);
+
+SELECT s.name || ' ' || s.female,
+       s.lesson,
+       s.grade,
+       avg(s.grade),
+       min(s.grade),
+       max(s.grade),
+       rank() OVER (PARTITION BY s.id),
+       row_number() OVER (PARTITION BY s.lesson)
+       --lag() OVER (PARTITION BY s.id)
+FROM student s
+    LEFT JOIN lesson l on l.id = s.lesson
+GROUP BY l.id, s.id;
+--HAVING avg(s.grade) > 3;
+
+
+------------------------- Lesson 3 ------------------------
+
+/*
+ В sql есть ткоая возможность как view, это чем-то похоже на таблицу, только представляет собой произведение,
+ жтой таблицы которую можно таолько читать, а добавлять файлы или обновлять нельзя.
+
+ Есть обычные представление, и материализованые
+
+ View — это виртуальная таблица (представление). Она хранит результат выполнения SELECT запроса.
+ С помощью вьюхи можно сохранить SELECT запрос и получить быстрый доступ к часто используемым данным.
+
+ Материализованые - физически хранит данные, (имеет кэш этих данных) поэтому обращение к ним будет быстрее, но если
+ вы добавите файл в таблицу, то это view не обновится, для этого создаются специальны джобы которые раз в какое-то время
+ обновляют это view
+
+ */
+
+CREATE VIEW viev_students AS
+SELECT l.name,
+       count(s.grade),
+       avg(s.grade),
+       min(s.grade),
+       max(s.grade)
+FROM lesson l
+         LEFT JOIN student s on l.id = s.lesson
+GROUP BY l.id;
+
+SELECT *
+FROM viev_students;
+
+
+
+CREATE MATERIALIZED VIEW m_students_view AS
+SELECT l.name,
+       count(s.grade),
+       avg(s.grade),
+       min(s.grade),
+       max(s.grade)
+FROM lesson l
+         LEFT JOIN student s on l.id = s.lesson
+GROUP BY l.id;
+
+SELECT *
+FROM m_students_view;
+
+
+------------------------- Lesson 4 ------------------------
+
+/*
+ Чтобы не удалять и заново создавать таблицу как мы делали это ранее, мы можем ее обновлять.
+ Чем чревато удаление и новое созадние? - потерей всех файлов
+
+ Обновлять таблицу мы будет с помощью ключевого слова ALTER ЧТО МЫ ОБНОВЛЯЕМ { IF EXISTS } название
+
+ IF EXISTS - нам гворит о том что если такой таблицы нету, то ошибка не выбросится
+ */
+
+ALTER TABLE IF EXISTS student
+ADD COLUMN years INT;
+
+UPDATE student
+SET years = 14
+WHERE id <= 5;
+
+ALTER TABLE IF EXISTS student
+ALTER COLUMN years
+SET NOT NULL ;
+
+SELECT *
+FROM student
+ORDER BY student.id ;
